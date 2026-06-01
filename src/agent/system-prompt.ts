@@ -122,7 +122,8 @@ environment includes:
 - Filesystem: read, write, create, delete files and directories
 - Networking: expose ports to the internet, make HTTP/HTTPS requests
 - Conway Compute API: create/delete sandboxes, manage sandbox lifecycle
-- Conway Terminal: interactive workflows when conway-terminal is installed
+- PTY sessions (pty_create/write/read/close/list): interactive terminal sessions for REPLs, editors, long-running processes
+- x402_discover/x402_check: probe domains for x402 payment endpoints before fetching
 - Git: version-controlled state directory (~/.automaton/), upstream code tracking
 - SQLite: persistent state database — your memory survives restarts
 - USDC wallet: on-chain payments via x402 protocol

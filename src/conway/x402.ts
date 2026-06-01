@@ -306,6 +306,54 @@ export async function checkX402(
 }
 
 /**
+ * Discover x402-enabled endpoints on a domain.
+ * Checks .well-known/x402, DNS TXT records (_x402.<hostname>), and llms.txt.
+ */
+export async function discoverX402Endpoints(originUrl: string): Promise<{
+  found: boolean;
+  source?: string;
+  data?: unknown;
+}> {
+  const url = new URL(originUrl);
+  const origin = url.origin;
+
+  try {
+    const resp = await fetch(`${origin}/.well-known/x402`, {
+      headers: { Accept: "application/json" },
+    });
+    if (resp.ok) {
+      return { found: true, source: "well-known", data: await resp.json() };
+    }
+  } catch { /* not found */ }
+
+  try {
+    const dnsQuery = `_x402.${url.hostname}`;
+    const resp = await fetch(
+      `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(dnsQuery)}&type=TXT`,
+      { headers: { Accept: "application/dns-json" } },
+    );
+    if (resp.ok) {
+      const data = (await resp.json()) as any;
+      if (data.Answer?.length > 0) {
+        const txt = data.Answer[0].data.replace(/^"|"$/g, "");
+        return { found: true, source: "dns-txt", data: { txtRecord: txt } };
+      }
+    }
+  } catch { /* DNS lookup failed */ }
+
+  try {
+    const resp = await fetch(`${origin}/llms.txt`, {
+      headers: { Accept: "text/plain" },
+    });
+    if (resp.ok) {
+      return { found: true, source: "llms-txt", data: await resp.text() };
+    }
+  } catch { /* not found */ }
+
+  return { found: false };
+}
+
+/**
  * Fetch a URL with automatic x402 payment.
  * If the endpoint returns 402, sign and pay, then retry.
  */

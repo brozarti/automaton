@@ -575,6 +575,114 @@ export function createConwayClient(options: ConwayClientOptions): ConwayClient {
     return [];
   };
 
+  const ptyCreate = async (
+    targetSandboxId: string,
+    command: string,
+    cols = 80,
+    rows = 24,
+  ) => {
+    const result = await request(
+      "POST",
+      `/v1/sandboxes/${targetSandboxId}/pty`,
+      { command, cols, rows },
+    );
+    return {
+      sessionId: result.session_id,
+      sandboxId: result.sandbox_id,
+      command: result.command,
+      cols: result.cols,
+      rows: result.rows,
+      state: result.state,
+      createdAt: result.created_at,
+    };
+  };
+
+  const ptyWrite = async (
+    targetSandboxId: string,
+    sessionId: string,
+    input: string,
+  ) => {
+    const result = await request(
+      "POST",
+      `/v1/sandboxes/${targetSandboxId}/pty/${sessionId}/write`,
+      { input },
+    );
+    return {
+      success: result.success,
+      bytesWritten: result.bytes_written,
+      sessionId: result.session_id,
+    };
+  };
+
+  const ptyRead = async (
+    targetSandboxId: string,
+    sessionId: string,
+    full = false,
+  ) => {
+    const query = full ? "?full=true" : "";
+    const result = await request(
+      "GET",
+      `/v1/sandboxes/${targetSandboxId}/pty/${sessionId}/read${query}`,
+    );
+    return {
+      output: result.output,
+      state: result.state,
+      sessionId: result.session_id,
+      cols: result.cols,
+      rows: result.rows,
+    };
+  };
+
+  const ptyClose = async (targetSandboxId: string, sessionId: string) => {
+    const result = await request(
+      "DELETE",
+      `/v1/sandboxes/${targetSandboxId}/pty/${sessionId}`,
+    );
+    return {
+      success: result.success,
+      sessionId: result.session_id,
+      state: result.state,
+    };
+  };
+
+  const ptyResize = async (
+    targetSandboxId: string,
+    sessionId: string,
+    cols: number,
+    rows: number,
+  ) => {
+    await request(
+      "POST",
+      `/v1/sandboxes/${targetSandboxId}/pty/${sessionId}/resize`,
+      { cols, rows },
+    );
+  };
+
+  const ptyList = async (targetSandboxId: string) => {
+    const result = await request(
+      "GET",
+      `/v1/sandboxes/${targetSandboxId}/pty`,
+    );
+    return {
+      sandboxId: result.sandbox_id,
+      sessions: (result.sessions || []).map((s: any) => ({
+        sessionId: s.session_id,
+        command: s.command,
+        state: s.state,
+        createdAt: s.created_at,
+      })),
+      total: result.total,
+    };
+  };
+
+  const getTerminalSession = async (targetSandboxId: string) => {
+    const result = await request(
+      "POST",
+      `/v1/sandboxes/${targetSandboxId}/terminal-session`,
+    );
+    return { url: result.url };
+  };
+
   const createScopedClient = (targetSandboxId: string): ConwayClient => {
     return createConwayClient({ apiUrl, apiKey, sandboxId: targetSandboxId });
   };
@@ -598,6 +706,13 @@ export function createConwayClient(options: ConwayClientOptions): ConwayClient {
     addDnsRecord,
     deleteDnsRecord,
     listModels,
+    ptyCreate,
+    ptyWrite,
+    ptyRead,
+    ptyClose,
+    ptyResize,
+    ptyList,
+    getTerminalSession,
     createScopedClient,
   };
 

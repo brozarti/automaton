@@ -396,6 +396,15 @@ export interface ConwayClient {
   deleteDnsRecord(domain: string, recordId: string): Promise<void>;
   // Model discovery
   listModels(): Promise<ModelInfo[]>;
+  // PTY (pseudo-terminal) sessions
+  ptyCreate(sandboxId: string, command: string, cols?: number, rows?: number): Promise<PtySession>;
+  ptyWrite(sandboxId: string, sessionId: string, input: string): Promise<PtyWriteResult>;
+  ptyRead(sandboxId: string, sessionId: string, full?: boolean): Promise<PtyReadResult>;
+  ptyClose(sandboxId: string, sessionId: string): Promise<PtyCloseResult>;
+  ptyResize(sandboxId: string, sessionId: string, cols: number, rows: number): Promise<void>;
+  ptyList(sandboxId: string): Promise<PtyListResult>;
+  // Terminal session
+  getTerminalSession(sandboxId: string): Promise<{ url: string }>;
   /** Create a new client scoped to a specific sandbox ID. */
   createScopedClient(targetSandboxId: string): ConwayClient;
 }
@@ -410,6 +419,47 @@ export interface PortInfo {
   port: number;
   publicUrl: string;
   sandboxId: string;
+}
+
+export interface PtySession {
+  sessionId: string;
+  sandboxId: string;
+  command: string;
+  cols: number;
+  rows: number;
+  state: string;
+  createdAt: string;
+}
+
+export interface PtyWriteResult {
+  success: boolean;
+  bytesWritten: number;
+  sessionId: string;
+}
+
+export interface PtyReadResult {
+  output: string;
+  state: string;
+  sessionId: string;
+  cols: number;
+  rows: number;
+}
+
+export interface PtyCloseResult {
+  success: boolean;
+  sessionId: string;
+  state: string;
+}
+
+export interface PtyListResult {
+  sandboxId: string;
+  sessions: Array<{
+    sessionId: string;
+    command: string;
+    state: string;
+    createdAt: string;
+  }>;
+  total: number;
 }
 
 export interface CreateSandboxOptions {

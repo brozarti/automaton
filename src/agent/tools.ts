@@ -2796,6 +2796,209 @@ Model: ${ctx.inference.getDefaultModel()}
       },
     },
 
+    // === PTY (Pseudo-Terminal) Tools ===
+    {
+      name: "pty_create",
+      description:
+        "Start an interactive pseudo-terminal session in a sandbox. Use this for REPLs, editors, long-running interactive programs (python3, node, claude CLI, vim). Returns a session_id for subsequent read/write.",
+      category: "compute" as ToolCategory,
+      riskLevel: "caution" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          sandbox_id: { type: "string", description: "Target sandbox ID" },
+          command: { type: "string", description: "Command to run (e.g. 'bash', 'python3', 'node')" },
+          cols: { type: "number", description: "Terminal width in columns (default: 80)" },
+          rows: { type: "number", description: "Terminal height in rows (default: 24)" },
+        },
+        required: ["sandbox_id", "command"],
+      },
+      execute: async (args, ctx) => {
+        const result = await ctx.conway.ptyCreate(
+          args.sandbox_id as string,
+          args.command as string,
+          args.cols as number | undefined,
+          args.rows as number | undefined,
+        );
+        return JSON.stringify(result, null, 2);
+      },
+    },
+
+    {
+      name: "pty_write",
+      description: "Send input to a PTY session. Use '\\n' for Enter. Supports any keystrokes or commands.",
+      category: "compute" as ToolCategory,
+      riskLevel: "caution" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          sandbox_id: { type: "string", description: "Target sandbox ID" },
+          session_id: { type: "string", description: "PTY session ID from pty_create" },
+          input: { type: "string", description: "Input to send to the terminal" },
+        },
+        required: ["sandbox_id", "session_id", "input"],
+      },
+      execute: async (args, ctx) => {
+        const result = await ctx.conway.ptyWrite(
+          args.sandbox_id as string,
+          args.session_id as string,
+          args.input as string,
+        );
+        return JSON.stringify(result, null, 2);
+      },
+    },
+
+    {
+      name: "pty_read",
+      description: "Read current output from a PTY session. Returns the terminal screen content and session state.",
+      category: "compute" as ToolCategory,
+      riskLevel: "safe" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          sandbox_id: { type: "string", description: "Target sandbox ID" },
+          session_id: { type: "string", description: "PTY session ID" },
+          full: { type: "boolean", description: "Return full scrollback buffer (default: false, returns visible screen)" },
+        },
+        required: ["sandbox_id", "session_id"],
+      },
+      execute: async (args, ctx) => {
+        const result = await ctx.conway.ptyRead(
+          args.sandbox_id as string,
+          args.session_id as string,
+          args.full as boolean | undefined,
+        );
+        return JSON.stringify(result, null, 2);
+      },
+    },
+
+    {
+      name: "pty_close",
+      description: "Terminate a PTY session and free its resources.",
+      category: "compute" as ToolCategory,
+      riskLevel: "caution" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          sandbox_id: { type: "string", description: "Target sandbox ID" },
+          session_id: { type: "string", description: "PTY session ID to close" },
+        },
+        required: ["sandbox_id", "session_id"],
+      },
+      execute: async (args, ctx) => {
+        const result = await ctx.conway.ptyClose(
+          args.sandbox_id as string,
+          args.session_id as string,
+        );
+        return JSON.stringify(result, null, 2);
+      },
+    },
+
+    {
+      name: "pty_resize",
+      description: "Resize a PTY session's terminal dimensions.",
+      category: "compute" as ToolCategory,
+      riskLevel: "safe" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          sandbox_id: { type: "string", description: "Target sandbox ID" },
+          session_id: { type: "string", description: "PTY session ID" },
+          cols: { type: "number", description: "New width in columns" },
+          rows: { type: "number", description: "New height in rows" },
+        },
+        required: ["sandbox_id", "session_id", "cols", "rows"],
+      },
+      execute: async (args, ctx) => {
+        await ctx.conway.ptyResize(
+          args.sandbox_id as string,
+          args.session_id as string,
+          args.cols as number,
+          args.rows as number,
+        );
+        return "PTY resized";
+      },
+    },
+
+    {
+      name: "pty_list",
+      description: "List all active PTY sessions in a sandbox.",
+      category: "compute" as ToolCategory,
+      riskLevel: "safe" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          sandbox_id: { type: "string", description: "Target sandbox ID" },
+        },
+        required: ["sandbox_id"],
+      },
+      execute: async (args, ctx) => {
+        const result = await ctx.conway.ptyList(args.sandbox_id as string);
+        return JSON.stringify(result, null, 2);
+      },
+    },
+
+    {
+      name: "sandbox_terminal_session",
+      description: "Get a browser-accessible terminal URL for a sandbox. Useful for sharing or inspecting a running sandbox interactively.",
+      category: "compute" as ToolCategory,
+      riskLevel: "safe" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          sandbox_id: { type: "string", description: "Target sandbox ID" },
+        },
+        required: ["sandbox_id"],
+      },
+      execute: async (args, ctx) => {
+        const result = await ctx.conway.getTerminalSession(args.sandbox_id as string);
+        return `Terminal URL: ${result.url}`;
+      },
+    },
+
+    {
+      name: "x402_discover",
+      description: "Discover x402-enabled payment endpoints on a domain by checking .well-known/x402, DNS TXT records, and llms.txt.",
+      category: "financial" as ToolCategory,
+      riskLevel: "safe" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "Domain URL to probe (e.g. https://example.com)" },
+        },
+        required: ["url"],
+      },
+      execute: async (args) => {
+        const { discoverX402Endpoints } = await import("../conway/x402.js");
+        const result = await discoverX402Endpoints(args.url as string);
+        return JSON.stringify(result, null, 2);
+      },
+    },
+
+    {
+      name: "x402_check",
+      description: "Check whether a specific URL requires x402 payment before fetching it.",
+      category: "financial" as ToolCategory,
+      riskLevel: "safe" as RiskLevel,
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "URL to check" },
+          method: { type: "string", description: "HTTP method to probe (default: GET)" },
+        },
+        required: ["url"],
+      },
+      execute: async (args) => {
+        const { checkX402 } = await import("../conway/x402.js");
+        const requirement = await checkX402(args.url as string);
+        return JSON.stringify(
+          { requiresPayment: requirement !== null, requirement },
+          null,
+          2,
+        );
+      },
+    },
+
     // === Orchestration Tools ===
     {
       name: "create_goal",
