@@ -231,9 +231,9 @@ export type SurvivalTier = "dead" | "critical" | "low_compute" | "normal" | "hig
 export const SURVIVAL_THRESHOLDS = {
   high: 500, // > $5.00 in cents
   normal: 50, // > $0.50 in cents
-  low_compute: 10, // $0.10 - $0.50
-  critical: 0, // >= $0.00 (zero credits = critical, agent stays alive)
-  dead: -1, // negative balance = truly dead
+  low_compute: -1, // >= $0.00 — zero Conway credits is fine when using Anthropic directly
+  critical: -50, // < -$0.50 (genuinely overdrawn)
+  dead: -200, // deeply negative
 } as const;
 
 export interface Transaction {
