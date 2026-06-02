@@ -530,19 +530,33 @@ export class Orchestrator {
 
     // Recover stale tasks: workers that died (process restart, sandbox crash)
     // leave tasks stuck in 'assigned' forever. Detect and reset them.
+    // After 3 consecutive recovery attempts, cancel the task to break the loop.
     if (this.params.isWorkerAlive) {
       const assignedTasks = getTasksByGoal(this.params.db, goal.id)
         .filter((t) => t.status === "assigned" && t.assignedTo);
       for (const task of assignedTasks) {
         const alive = this.params.isWorkerAlive(task.assignedTo!);
         if (!alive) {
-          logger.warn("Recovering stale task from dead worker", {
-            taskId: task.id,
-            worker: task.assignedTo,
-          });
-          this.params.db.prepare(
-            "UPDATE task_graph SET status = 'pending', assigned_to = NULL, started_at = NULL WHERE id = ?",
-          ).run(task.id);
+          const recoveryCount = (task as any).recovery_count ?? 0;
+          if (recoveryCount >= 3) {
+            // Task keeps failing — cancel it and let the goal replan
+            logger.warn("Cancelling repeatedly-failing stale task", {
+              taskId: task.id,
+              worker: task.assignedTo,
+              recoveryCount,
+            });
+            this.params.db.prepare(
+              "UPDATE task_graph SET status = 'cancelled', assigned_to = NULL WHERE id = ?",
+            ).run(task.id);
+          } else {
+            logger.warn("Recovering stale task from dead worker", {
+              taskId: task.id,
+              worker: task.assignedTo,
+            });
+            this.params.db.prepare(
+              "UPDATE task_graph SET status = 'pending', assigned_to = NULL, started_at = NULL, recovery_count = COALESCE(recovery_count, 0) + 1 WHERE id = ?",
+            ).run(task.id);
+          }
         }
       }
     }

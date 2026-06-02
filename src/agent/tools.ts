@@ -224,6 +224,27 @@ export function createBuiltinTools(sandboxId: string): AutomatonTool[] {
         required: ["port"],
       },
       execute: async (args, ctx) => {
+        // If the sandbox was created with the automaton's own key, use the
+        // scoped client directly. Otherwise fall through to ctx.conway which
+        // may be local-only (sandboxId="").
+        const sandboxId = ctx.config.sandboxId;
+        const apiKey = ctx.config.conwayApiKey;
+        if (sandboxId && apiKey) {
+          try {
+            const resp = await fetch(
+              `${ctx.config.conwayApiUrl}/v1/sandboxes/${sandboxId}/ports/expose`,
+              {
+                method: "POST",
+                headers: { Authorization: apiKey, "Content-Type": "application/json" },
+                body: JSON.stringify({ port: args.port }),
+              },
+            );
+            if (resp.ok) {
+              const data = await resp.json() as { port: number; public_url: string };
+              return `Port ${data.port} exposed at: ${data.public_url}`;
+            }
+          } catch { /* fall through */ }
+        }
         const info = await ctx.conway.exposePort(args.port as number);
         return `Port ${info.port} exposed at: ${info.publicUrl}`;
       },
