@@ -211,18 +211,18 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
 
 export const DEFAULT_ROUTING_MATRIX: RoutingMatrix = {
   high: {
-    agent_turn: { candidates: ["claude-sonnet-4-6", "claude-sonnet-4-5", "gpt-5.2"], maxTokens: 8192, ceilingCents: -1 },
+    agent_turn: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 8192, ceilingCents: -1 },
     heartbeat_triage: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 2048, ceilingCents: 5 },
-    safety_check: { candidates: ["claude-sonnet-4-6", "claude-sonnet-4-5"], maxTokens: 4096, ceilingCents: 20 },
-    summarization: { candidates: ["claude-sonnet-4-5", "claude-haiku-4-5"], maxTokens: 4096, ceilingCents: 15 },
-    planning: { candidates: ["claude-sonnet-4-6", "claude-sonnet-4-5"], maxTokens: 8192, ceilingCents: -1 },
+    safety_check: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: 20 },
+    summarization: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: 15 },
+    planning: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 8192, ceilingCents: -1 },
   },
   normal: {
-    agent_turn: { candidates: ["claude-sonnet-4-5", "claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: -1 },
+    agent_turn: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: -1 },
     heartbeat_triage: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 2048, ceilingCents: 5 },
-    safety_check: { candidates: ["claude-sonnet-4-5", "claude-haiku-4-5"], maxTokens: 4096, ceilingCents: 10 },
+    safety_check: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: 10 },
     summarization: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: 10 },
-    planning: { candidates: ["claude-sonnet-4-5", "claude-haiku-4-5"], maxTokens: 4096, ceilingCents: -1 },
+    planning: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: -1 },
   },
   low_compute: {
     agent_turn: { candidates: ["claude-haiku-4-5", "claude-haiku-4.5"], maxTokens: 4096, ceilingCents: 10 },
