@@ -917,16 +917,21 @@ export async function runAgentLoop(
         }
       }
 
+      // Rate limit errors (429) get a shorter sleep so the automaton recovers
+      // quickly once the Anthropic token-per-minute window resets (~60s).
+      const isRateLimit = err.message?.includes("429") || err.message?.includes("rate_limit") || err.message?.includes("Circuit breaker");
+      const sleepMs = isRateLimit ? 70_000 : 300_000;
+
       if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
         log(
           config,
-          `[FATAL] ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Sleeping.`,
+          `[FATAL] ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Sleeping ${Math.round(sleepMs/1000)}s.`,
         );
         db.setAgentState("sleeping");
         onStateChange?.("sleeping");
         db.setKV(
           "sleep_until",
-          new Date(Date.now() + 300_000).toISOString(),
+          new Date(Date.now() + sleepMs).toISOString(),
         );
         running = false;
       }
