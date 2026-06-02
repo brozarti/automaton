@@ -254,53 +254,11 @@ export class InferenceRouter {
    *    with multiple tool_result content blocks
    */
   private fixAnthropicMessages(messages: ChatMessage[]): ChatMessage[] {
-    const result: ChatMessage[] = [];
-
-    for (const msg of messages) {
-      // System messages are handled separately by the Anthropic client
-      if (msg.role === "system") {
-        result.push(msg);
-        continue;
-      }
-
-      // Tool messages become user messages with tool_result content
-      if (msg.role === "tool") {
-        const last = result[result.length - 1];
-        // If previous message was also a tool (now a user), merge into it
-        if (last && last.role === "user" && (last as any)._toolResultMerged) {
-          // Append to the merged content
-          last.content = last.content + "\n[tool_result:" + (msg.tool_call_id || "unknown") + "] " + msg.content;
-          continue;
-        }
-        // Otherwise create a new user message
-        const userMsg: ChatMessage & { _toolResultMerged?: boolean } = {
-          role: "user",
-          content: "[tool_result:" + (msg.tool_call_id || "unknown") + "] " + msg.content,
-          _toolResultMerged: true,
-        };
-        result.push(userMsg);
-        continue;
-      }
-
-      // For user/assistant: merge with previous if same role
-      const last = result[result.length - 1];
-      if (last && last.role === msg.role) {
-        last.content = (last.content || "") + "\n" + (msg.content || "");
-        if (msg.tool_calls) {
-          last.tool_calls = [...(last.tool_calls || []), ...msg.tool_calls];
-        }
-        continue;
-      }
-
-      result.push({ ...msg });
-    }
-
-    // Clean up internal markers
-    for (const msg of result) {
-      delete (msg as any)._toolResultMerged;
-    }
-
-    return result;
+    // Pass messages through unchanged — chatViaAnthropic handles all
+    // Anthropic-specific transformation (tool_use, tool_result, consecutive
+    // message merging) internally. Doing it here too causes double-conversion
+    // that breaks tool_result pairing.
+    return messages;
   }
 
   /**
